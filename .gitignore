@@ -208,4 +208,5 @@ __marimo__/
 
 # DataBase
 *.db
+*.db-journal
 *.csv
