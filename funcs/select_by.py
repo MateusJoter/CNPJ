@@ -53,56 +53,80 @@ def carregar_dataframe_sqlite(csv_file, DB_PATH):
 
     conn.close()
 
-def places(DB_PATH_entrada, DB_PATH_saida, uf):
+def UF(DB_PATH, ufs, export_csv = False):
     """Filtra os dados pelos seus locais"""
-    conn = obter_conexao(DB_PATH_entrada)
+
+    if type(ufs) == list:
+        ufs = ", ".join([f'{uf}' for uf in ufs])
+
+    elif type(ufs) == str:
+        ufs = f"'{ufs}'"
+
+    else:
+        print("Os locais devem entrar como str ou list.")
+        return
+    
+    conn = obter_conexao(DB_PATH)
     cursor = conn.cursor()
 
-    cursor.execute(f"ATTACH DATABASE '{DB_PATH_saida}' AS filtered_db")
-    
+    cursor.execute(f"DROP VIEW IF EXISTS cnpj_UFs_selecionados")
+
     cursor.execute(f"""
-        CREATE TABLE filtered_db.cnpj_{uf} AS
+        CREATE VIEW IF NOT EXISTS cnpj_UFs_selecionados AS
         SELECT *
         FROM view_cnpj_completo 
-        WHERE uf = '{uf}'
-    """) # AJUSTAR view_cnpj_completo SE NECESSÁRIO
+        WHERE uf in ({ufs})
+    """) 
     conn.commit()
 
-    csv_filtrado = "cnpj_uf.csv" # AJUSTAR SE NECESSÁRIO
-
-    chunks = pd.read_sql_query(f"SELECT * FROM filtered_db.cnpj_{uf}", conn, chunksize = 100000)
-
-    first_chunk = True
-
-    for chunk in tqdm(chunks, desc = "Filtrando os dados por UF"):
-        chunk.to_csv(csv_filtrado, index=False, sep=';', encoding='utf-8', mode='a', header=first_chunk)
-        first_chunk = False
+    if export_csv:
+        csv_filtrado = "cnpj_UFs_selecionados.csv"
+    
+        chunks = pd.read_sql_query(f"SELECT * FROM cnpj_UFs_selecionados", conn, chunksize = 100000)
+    
+        first_chunk = True
+    
+        for chunk in tqdm(chunks, desc = "Filtrando os dados por UF"):
+            chunk.to_csv(csv_filtrado, index=False, sep=';', encoding='utf-8', mode='a', header=first_chunk)
+            first_chunk = False
 
     conn.close()
 
-def places(DB_PATH_entrada, DB_PATH_saida, uf):
-    """Filtra os dados pelos seus locais"""
-    conn = obter_conexao(DB_PATH_entrada)
+def main_CNAE(DB_PATH, CNAEs, export_csv = False):
+    """Filtra os dados pelos seus CNAEs principais"""
+
+    if type(CNAEs) == list:
+        CNAEs = ", ".join([f'{CNAE}' for CNAE in CNAEs])
+
+    elif type(CNAEs) == str:
+        CNAEs = f"'{CNAEs}'"
+
+    else:
+        print("Os locais devem entrar como str ou list.")
+        return
+    
+    conn = obter_conexao(DB_PATH)
     cursor = conn.cursor()
 
-    cursor.execute(f"ATTACH DATABASE '{DB_PATH_saida}' AS filtered_db")
-    
+    cursor.execute(f"DROP VIEW IF EXISTS cnpj_CNAEs_principais_selecionados")
+
     cursor.execute(f"""
-        CREATE TABLE filtered_db.cnpj_{uf} AS
+        CREATE VIEW IF NOT EXISTS cnpj_CNAEs_principais_selecionados AS
         SELECT *
         FROM view_cnpj_completo 
-        WHERE uf = '{uf}'
-    """) # AJUSTAR view_cnpj_completo SE NECESSÁRIO
+        WHERE cnae_fiscal_principal in ({CNAEs})
+    """)
     conn.commit()
 
-    csv_filtrado = "cnpj_uf.csv" # AJUSTAR SE NECESSÁRIO
-
-    chunks = pd.read_sql_query(f"SELECT * FROM filtered_db.cnpj_{uf}", conn, chunksize = 100000)
-
-    first_chunk = True
-
-    for chunk in tqdm(chunks, desc = "Filtrando os dados por UF"):
-        chunk.to_csv(csv_filtrado, index=False, sep=';', encoding='utf-8', mode='a', header=first_chunk)
-        first_chunk = False
+    if export_csv:
+        csv_filtrado = "cnpj_CNAEs_principais_selecionados.csv" 
+    
+        chunks = pd.read_sql_query(f"SELECT * FROM cnpj_CNAEs_principais_selecionados", conn, chunksize = 100000)
+    
+        first_chunk = True
+    
+        for chunk in tqdm(chunks, desc = "Filtrando os dados por CNAE princial"):
+            chunk.to_csv(csv_filtrado, index=False, sep=';', encoding='utf-8', mode='a', header=first_chunk)
+            first_chunk = False
 
     conn.close()
