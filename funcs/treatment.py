@@ -275,3 +275,88 @@ def carregar_dataframe_sqlite(file_object, tabela, DB_PATH):
             chunk['capital_social'] = chunk['capital_social'].str.replace(',', '.').astype(float)
         chunk.to_sql(tabela, conn, if_exists='append', index=False)
     conn.close()
+
+def aglutinar_endereco(db_path, db_name):
+    """
+    Cria uma VIEW no SQLite que exclui as colunas individuais de endereço 
+    e mantém apenas a coluna aglutinada junto aos metadados do CNPJ.
+    """
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    sql_view = f"""
+    CREATE VIEW IF NOT EXISTS view_endereco_simplificado AS
+    SELECT 
+        cnae_fiscal_principal,
+        cnae_fiscal_secundaria,
+        cnpj_completo,
+        razao_social,
+        natureza_juridica,
+        qualificacao_responsavel,
+        capital_social,
+        porte_empresa,
+        ente_federativo_responsavel,
+        matriz_filial,
+        situacao_cadastral,
+        data_situacao_cadastral,
+        nome_cidade_exterior,
+        pais,
+        data_inicio_atividade,
+        complemento,
+        situacao_especial,
+        data_situacao_especial,
+        (
+            COALESCE(tipo_logradouro, '') || ' ' || 
+            COALESCE(logradouro, '') || ', ' || 
+            COALESCE(numero, 'S/N') || ' - ' || 
+            COALESCE(bairro, '') || ', ' || 
+            COALESCE(municipio, '') || ' - ' || 
+            COALESCE(uf, '') || ', ' || 
+            COALESCE(cep, '') || ', BRASIL'
+        ) AS endereco_completo
+    FROM {db_name}
+    """
+
+    try:
+        cursor.execute("DROP VIEW IF EXISTS view_endereco_simplificado") 
+        cursor.execute(sql_view)
+        conn.commit()
+        print("✓ VIEW 'view_endereco_simplificado' atualizada. Colunas redundantes removidas.")
+    except sqlite3.Error as e:
+        print(f"Erro ao configurar a VIEW: {e}")
+    finally:
+        conn.close()
+
+def validacao(db_path, db_name, limite=5):
+    """
+    Validação visual das colunas tratadas, exibindo um recorte das primeiras linhas.
+    """
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row  # Permite acessar colunas pelo nome
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute(f"SELECT * FROM {db_name} LIMIT ?", (limite,))
+        rows = cursor.fetchall()
+        
+        if rows:
+            # Exibe os nomes das colunas uma única vez
+            colunas = list(rows[0].keys())
+            print(f"\n{'='*100}")
+            print(f"COLUNAS PRESENTES: {colunas}")
+            print(f"{'='*100}")
+            
+            # Exibe o conteúdo de cada linha formatado como dicionário para facilitar a leitura
+            print(f"\nRECORTE DAS PRIMEIRAS {len(rows)} LINHAS DA TABELA '{db_name}':")
+            for idx, row in enumerate(rows, 1):
+                print(f"\n[Registro {idx}]")
+                for coluna in colunas:
+                    print(f"  {coluna.ljust(25)}: {row[coluna]}")
+            print(f"\n{'='*100}")
+        else:
+            print(f"A tabela ou view '{db_name}' está vazia.")
+            
+    except sqlite3.Error as e:
+        print(f"Erro na validação: {e}")
+    finally:
+        conn.close()

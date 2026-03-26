@@ -79,3 +79,30 @@ def places(DB_PATH_entrada, DB_PATH_saida, uf):
         first_chunk = False
 
     conn.close()
+
+def places(DB_PATH_entrada, DB_PATH_saida, uf):
+    """Filtra os dados pelos seus locais"""
+    conn = obter_conexao(DB_PATH_entrada)
+    cursor = conn.cursor()
+
+    cursor.execute(f"ATTACH DATABASE '{DB_PATH_saida}' AS filtered_db")
+    
+    cursor.execute(f"""
+        CREATE TABLE filtered_db.cnpj_{uf} AS
+        SELECT *
+        FROM view_cnpj_completo 
+        WHERE uf = '{uf}'
+    """) # AJUSTAR view_cnpj_completo SE NECESSÁRIO
+    conn.commit()
+
+    csv_filtrado = "cnpj_uf.csv" # AJUSTAR SE NECESSÁRIO
+
+    chunks = pd.read_sql_query(f"SELECT * FROM filtered_db.cnpj_{uf}", conn, chunksize = 100000)
+
+    first_chunk = True
+
+    for chunk in tqdm(chunks, desc = "Filtrando os dados por UF"):
+        chunk.to_csv(csv_filtrado, index=False, sep=';', encoding='utf-8', mode='a', header=first_chunk)
+        first_chunk = False
+
+    conn.close()
