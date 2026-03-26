@@ -62,7 +62,7 @@ def configurar_schema(DB_PATH):
     conn.commit()
     conn.close()
 
-def criar_indices():
+def criar_indices(DB_PATH):
     """Cria índices para acelerar os JOINs das tabelas principais e dicionários."""
     conn = obter_conexao(DB_PATH)
     cursor = conn.cursor()
@@ -78,7 +78,7 @@ def criar_indices():
     conn.commit()
     conn.close()
 
-def formatar_datas_estabelecimentos():
+def formatar_datas_estabelecimentos(DB_PATH):
     """Transforma as datas de AAAAMMDD para DD/MM/AAAA."""
     conn = obter_conexao(DB_PATH)
     cursor = conn.cursor()
@@ -93,7 +93,7 @@ def formatar_datas_estabelecimentos():
     conn.commit()
     conn.close()
 
-def corrigir_numeros_estabelecimentos():
+def corrigir_numeros_estabelecimentos(DB_PATH):
     """Corrige números de imóveis (0, 00, 000 para vazio e SN para S/N)."""
     conn = obter_conexao(DB_PATH)
     cursor = conn.cursor()
@@ -110,7 +110,7 @@ def corrigir_numeros_estabelecimentos():
     conn.commit()
     conn.close()
 
-def padronizar_logradouros():
+def padronizar_logradouros(DB_PATH):
     """Padroniza o campo tipo_logradouro para RUA, AVENIDA ou TRAVESSA."""
     conn = obter_conexao(DB_PATH)
     cursor = conn.cursor()
@@ -130,7 +130,7 @@ def padronizar_logradouros():
     conn.commit()
     conn.close()
 
-def traduzir_codigos():
+def traduzir_codigos(DB_PATH):
     """Traduz códigos de Matriz/Filial e Porte da Empresa e renomeia coluna."""
     conn = obter_conexao(DB_PATH)
     cursor = conn.cursor()
@@ -160,7 +160,7 @@ def traduzir_codigos():
     conn.commit()
     conn.close()
 
-def criar_view_consolidada():
+def criar_view_consolidada(DB_PATH):
     """Cria a VIEW consolidada final com a ordem exata das colunas solicitadas."""
     conn = obter_conexao(DB_PATH)
     cursor = conn.cursor()
@@ -231,34 +231,34 @@ def exportar_csv_final(DB_PATH):
     conn.close()
     print("\nExportação concluída com sucesso!")
 
-def processar_zip_principal(caminho_zip_master):
+def processar_zip_principal(caminho_zip_master, DB_PATH):
     """Lida com a estrutura de ZIP dentro de ZIP sem extração física."""
     if not os.path.exists(caminho_zip_master):
         print(f"Erro: Arquivo {caminho_zip_master} não encontrado.")
         return False
     with zipfile.ZipFile(caminho_zip_master, 'r') as master_zip:
-        for nome_sub_zip in master_zip.namelist():
-            if nome_sub_zip.lower().endswith('.zip'):
-                tabela = ""
-                n = nome_sub_zip.upper()
-                if "EMPRE" in n: tabela = "empresas"
-                elif "ESTABELE" in n: tabela = "estabelecimentos"
-                elif "CNAE" in n: tabela = "cnae"
-                elif "NATJU" in n: tabela = "natju"
-                elif "QUALS" in n: tabela = "quals"
-                elif "PAIS" in n: tabela = "pais"
-                elif "MUNIC" in n: tabela = "munic"
-                if tabela:
-                    print(f"Processando {nome_sub_zip}...")
-                    with master_zip.open(nome_sub_zip) as sub_zip_data:
-                        content = io.BytesIO(sub_zip_data.read())
-                        with zipfile.ZipFile(content) as sub_zip:
-                            nome_csv = sub_zip.namelist()[0]
-                            with sub_zip.open(nome_csv) as csv_file:
-                                carregar_dataframe_sqlite(csv_file, tabela)
+        nomes_sub_zips = [nome for nome in master_zip.namelist() if nome.endswith('.zip')]
+        for nome_sub_zip in nomes_sub_zips:
+            with master_zip.open(nome_sub_zip) as sub_zip_data:
+                content = io.BytesIO(sub_zip_data.read())
+                with zipfile.ZipFile(content, 'r') as sub_zip:
+                    nome_csv = sub_zip.namelist()[0]
+                    tabela = ""
+                    n = nome_csv.upper()
+                    if "EMPRE" in n: tabela = "empresas"
+                    elif "ESTABELE" in n: tabela = "estabelecimentos"
+                    elif "CNAE" in n: tabela = "cnae"
+                    elif "NATJU" in n: tabela = "natju"
+                    elif "QUALS" in n: tabela = "quals"
+                    elif "PAIS" in n: tabela = "pais"
+                    elif "MUNIC" in n: tabela = "munic"
+                    if tabela:
+                        print(f"Processando {nome_csv}...")
+                        with sub_zip.open(nome_csv) as csv_file:
+                            carregar_dataframe_sqlite(csv_file, tabela, DB_PATH)
     return True
 
-def carregar_dataframe_sqlite(file_object, tabela):
+def carregar_dataframe_sqlite(file_object, tabela, DB_PATH):
     """Insere dados no SQLite em chunks concatenando o CNPJ completo."""
     conn = obter_conexao(DB_PATH)
     cols_emp = ['cnpj_basico','razao_social','natureza_juridica','qualificacao_responsavel','capital_social','porte_empresa','ente_federativo_responsavel']
