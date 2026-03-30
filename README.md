@@ -32,7 +32,7 @@ exportar_csv = False
 
 **Saída**: Uma VIEW completa que permite visualizar os dados de forma integrada sem a necessidade de múltiplos JOINs manuais.
 
-### 2. Workflow de Unificação de Endereços
+### 2. Workflow de Unificação de Endereços - aglutinar_enderecos.ipynb
 
 Focado na qualidade dos dados geográficos:
 
@@ -50,7 +50,7 @@ DB_NAME_OUT = "nome_tabela_saida"
 
 **Saída**: Uma VIEW otimizada com endereços unificados, facilitando processos de geocodificação ou análise regional.
 
-### 3. Workflow de Filtragem
+### 3. Workflow de Filtragem - filtragem.ipynb
 
 Permite a extração de subconjuntos específicos de dados:
 
