@@ -5,6 +5,7 @@ Este repositório contém um pipeline robusto para a extração, tratamento e an
 ## Entradas
 
 A única entrada necessária é o grande arquivo zipado dos .csv vindo do site da [**Receita Federal do Brasil**](https://arquivos.receitafederal.gov.br/index.php/s/YggdBLfdninEJX9). 
+
 Acesse o link, selecione o mês e baixe o arquivo através do botão "*↓ Baixar*"
 
 ## 🚀 Funcionalidades
