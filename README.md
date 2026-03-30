@@ -74,6 +74,6 @@ Permite a extração de subconjuntos específicos de dados:
 
 **Execução do Tratamento**: Aponte o script para a pasta dos zips para gerar o banco consolidado.
 
-*Unificação/Filtragem*: Execute os workflows subsequentes conforme a sua necessidade de análise.
+**Unificação/Filtragem**: Execute os workflows subsequentes conforme a sua necessidade de análise.
 
-*Nota*: Este projeto é destinado a investigadores, analistas de dados e programadores que procuram agilidade no manuseio da base de dados de CNPJs, que originalmente possui um volume massivo de informações.
+**Nota**: Este projeto é destinado a investigadores, analistas de dados e programadores que procuram agilidade no manuseio da base de dados de CNPJs, que originalmente possui um volume massivo de informações.
