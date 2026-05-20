@@ -276,7 +276,7 @@ def carregar_dataframe_sqlite(file_object, tabela, DB_PATH):
         chunk.to_sql(tabela, conn, if_exists='append', index=False)
     conn.close()
 
-def aglutinar_endereco(db_path, db_name):
+def aglutinar_endereco(db_path, db_name_in, db_name_out):
     """
     Cria uma VIEW no SQLite que exclui as colunas individuais de endereço 
     e mantém apenas a coluna aglutinada junto aos metadados do CNPJ.
@@ -285,7 +285,7 @@ def aglutinar_endereco(db_path, db_name):
     cursor = conn.cursor()
 
     sql_view = f"""
-    CREATE VIEW IF NOT EXISTS view_endereco_simplificado AS
+    CREATE VIEW IF NOT EXISTS {db_name_out} AS
     SELECT 
         cnae_fiscal_principal,
         cnae_fiscal_secundaria,
@@ -314,14 +314,14 @@ def aglutinar_endereco(db_path, db_name):
             COALESCE(uf, '') || ', ' || 
             COALESCE(cep, '') || ', BRASIL'
         ) AS endereco_completo
-    FROM {db_name}
+    FROM {db_name_in}
     """
 
     try:
-        cursor.execute("DROP VIEW IF EXISTS view_endereco_simplificado") 
+        cursor.execute(f"DROP VIEW IF EXISTS {db_name_out}") 
         cursor.execute(sql_view)
         conn.commit()
-        print("✓ VIEW 'view_endereco_simplificado' atualizada. Colunas redundantes removidas.")
+        print(f"✓ VIEW '{db_name_out}' atualizada. Colunas redundantes removidas.")
     except sqlite3.Error as e:
         print(f"Erro ao configurar a VIEW: {e}")
     finally:
